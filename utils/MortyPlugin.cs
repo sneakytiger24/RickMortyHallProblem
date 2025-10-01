@@ -1,0 +1,35 @@
+using System.Reflection;
+
+class MortyPlugin
+{
+    public static string[] GetAvailableMortyTypes()
+    {
+        string[] mortyTypes = Directory.GetFiles("./morties", "*.cs")
+            .SelectMany(file => File.ReadAllLines(file))
+            .Where(line => line.Contains("class") && line.Contains("Morty") && !line.Contains("abstract"))
+            .Select(line => line.Split(' ')[1].Trim())
+            .ToArray();
+        return mortyTypes;
+    }
+    public static Morty GetMortyInstance(string mortyType, GameCore game, int boxCount, int fairNumber)
+    {
+        string[] availableTypes = GetAvailableMortyTypes();
+        if (!availableTypes.Contains(mortyType))
+        {
+            throw new ArgumentException($"Invalid Morty type. Supported types: {string.Join(", ", availableTypes)}");
+        }
+
+        var type = Assembly.GetExecutingAssembly()
+                   .GetTypes()
+                   .SingleOrDefault(t => t.Name == mortyType);
+
+        if (type == null)
+        {
+            throw new TypeLoadException($"Could not load Morty type {mortyType}");
+        }
+
+        var mortyInstance = Activator.CreateInstance(type, game, boxCount, fairNumber)
+            ?? throw new InvalidOperationException($"Failed to create instance of Morty type {mortyType}");
+        return (Morty)mortyInstance;
+    }
+}
