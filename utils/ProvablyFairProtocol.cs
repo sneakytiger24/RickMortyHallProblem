@@ -2,13 +2,22 @@ using System.Security.Cryptography;
 
 class ProvablyFairProtocol
 {
+    public static string GenerateKey()
+    {
+        byte[] keyBytes = new byte[32];
+        using (var rng = RandomNumberGenerator.Create())
+        {
+            rng.GetBytes(keyBytes);
+        }
+        return Convert.ToHexString(keyBytes);
+    }
     public static int GenerateRandomNumber(int n)
     {
         return RandomNumberGenerator.GetInt32(0, n);
     }
     public static string ComputeHMAC(string key, int number)
     {
-        using (var hmac = new HMACSHA3_256(Convert.FromBase64String(key)))
+        using (var hmac = new HMACSHA3_256(Convert.FromHexString(key)))
         {
             byte[] hash = hmac.ComputeHash(BitConverter.GetBytes(number));
             return Convert.ToHexString(hash);
