@@ -16,7 +16,8 @@ class MortyPlugin
         string[] availableTypes = GetAvailableMortyTypes();
         if (!availableTypes.Contains(mortyType))
         {
-            throw new ArgumentException($"Invalid Morty type. Supported types: {string.Join(", ", availableTypes)}");
+            Console.WriteLine($"Invalid Morty type. Supported types: {string.Join(", ", availableTypes)}");
+            Environment.Exit(1);
         }
 
         var type = Assembly.GetExecutingAssembly()
@@ -25,11 +26,26 @@ class MortyPlugin
 
         if (type == null)
         {
-            throw new TypeLoadException($"Could not load Morty type {mortyType}");
+            Console.WriteLine($"Could not load Morty type {mortyType}");
+            Environment.Exit(1);
         }
 
-        var mortyInstance = Activator.CreateInstance(type, game, boxCount, fairNumber)
-            ?? throw new InvalidOperationException($"Failed to create instance of Morty type {mortyType}");
+        var mortyInstance = Activator.CreateInstance(type, game, boxCount, fairNumber);
+        if (mortyInstance == null)
+        {
+            Console.WriteLine($"Failed to create instance of Morty type {mortyType}");
+            Environment.Exit(1);
+        }
         return (Morty)mortyInstance;
+    }
+
+    public static void ValidateMortyType(string mortyType)
+    {
+        string[] availableTypes = GetAvailableMortyTypes();
+        if (!availableTypes.Contains(mortyType))
+        {
+            Console.WriteLine($"Invalid Morty type. Supported types: {string.Join(", ", availableTypes)}");
+            Environment.Exit(1);
+        }
     }
 }

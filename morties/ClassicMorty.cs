@@ -26,6 +26,6 @@ class ClassicMorty : Morty
     }
     public override string[] CalculateExactProbability()
     {
-        return [1.0 / (double)BoxCount * 100 + "%", (1.0 - 1.0 / (double)BoxCount) * 100 + "%"];
+        return [(1.0 - 1.0 / (double)BoxCount) * 100 + "%", 1.0 / (double)BoxCount * 100 + "%"];
     }
 }

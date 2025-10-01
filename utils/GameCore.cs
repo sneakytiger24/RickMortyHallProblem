@@ -22,6 +22,7 @@ class GameCore
         this.BoxCount = boxCount;
         this.MortyType = mortyType;
         this.statisticsAccumulator = new StatisticsAccumulator();
+        MortyPlugin.ValidateMortyType(mortyType);
     }
     public void GenerateFairNumber1()
     {
@@ -30,12 +31,18 @@ class GameCore
         hmac1 = ProvablyFairProtocol.ComputeHMAC(key1, m1);
         Console.WriteLine($"Morty: Oh geez, Rick, I'm gonna hide your portal gun in one of the {BoxCount} boxes, okay?");
         Console.WriteLine($"Morty: HMAC1={hmac1}");
-        Console.WriteLine($"Morty: Rick, enter your number [0,{BoxCount}) so you don’t whine later that I cheated, alright?");
-        r1 = int.Parse(Console.ReadLine()!);
+        Console.WriteLine($"Morty: Rick, enter your number [0,{BoxCount}) so you don't whine later that I cheated, alright?");
+        while (!int.TryParse(Console.ReadLine(), out r1) || r1 >= BoxCount || r1 < 0)
+        {
+            Console.WriteLine($"Morty: Aw geez Rick, you need to enter a number between 0 and {BoxCount - 1}!");
+        }
         FairNumber1 = ProvablyFairProtocol.GenerateFairNumber(m1, r1, BoxCount);
         Morty = MortyPlugin.GetMortyInstance(MortyType, this, BoxCount, FairNumber1);
-        Console.WriteLine($"Morty: Okay, okay, I hid the gun. What’s your guess [0,{BoxCount})?");
-        b = int.Parse(Console.ReadLine()!);
+        Console.WriteLine($"Morty: Okay, okay, I hid the gun. What's your guess [0,{BoxCount})?");
+        while (!int.TryParse(Console.ReadLine(), out b) || b >= BoxCount || b < 0)
+        {
+            Console.WriteLine($"Morty: Aw geez Rick, you need to enter a number between 0 and {BoxCount - 1}!");
+        }
         Morty.ReceiveRickGuess(b);
     }
     public int GenerateFairNumber2()
@@ -45,9 +52,14 @@ class GameCore
         hmac2 = ProvablyFairProtocol.ComputeHMAC(key2, m2);
         Console.WriteLine($"Morty: HMAC2={hmac2}");
         var numbers = Enumerable.Range(0, BoxCount).Where(n => n != b);
-        Console.WriteLine($"Morty: Rick, enter your number {string.Join(", ", numbers)} so you don't whine later that I cheated, alright?");
-        r2 = int.Parse(Console.ReadLine()!);
-        FairNumber2 = ProvablyFairProtocol.GenerateFairNumber(m2, r2, BoxCount - 1);
+        Console.WriteLine($"Morty: Rick, enter your number [{string.Join(", ", numbers)}] so you don't whine later that I cheated, alright?");
+        while (!int.TryParse(Console.ReadLine(), out r2) || !numbers.Contains(r2))
+        {
+            Console.WriteLine($"Morty: Aw geez Rick, you need to enter a number from [{string.Join(", ", numbers)}]!");
+        }
+        remainingBoxes = Enumerable.Range(0, BoxCount).Where(n => n != FairNumber1 && n != b).ToArray();
+        FairNumber2 = remainingBoxes[ProvablyFairProtocol.GenerateFairNumber(m2, r2, remainingBoxes.Length)];
+
         return FairNumber2;
     }
     public void ShowMessage(string message) { Console.WriteLine(message); }
