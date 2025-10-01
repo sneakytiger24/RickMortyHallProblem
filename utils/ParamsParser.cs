@@ -3,7 +3,7 @@ using System.ComponentModel.DataAnnotations;
 class ParamsParser
 {
     public static int BoxNumber { get; private set; }
-    public static string MortyType { get; private set; }
+    public static string MortyType { get; private set; } = string.Empty;
     public static void ValidateArguments(string[] args)
     {
         if (args.Length == 0)

@@ -1,20 +1,21 @@
+using ConsoleTables;
 class GameCore
 {
     private int BoxCount;
     private int FairNumber1;
     private int FairNumber2;
     private string MortyType;
-    private Morty Morty;
-    private string key1;
-    private string key2;
-    private string hmac1;
-    private string hmac2;
+    private Morty? Morty;
+    private string? key1;
+    private string? key2;
+    private string? hmac1;
+    private string? hmac2;
     private int m1;
     private int m2;
     private int r1;
     private int r2;
     private int b;
-    private int[] remainingBoxes;
+    private int[]? remainingBoxes;
     private StatisticsAccumulator statisticsAccumulator;
     public GameCore(int boxCount, string mortyType)
     {
@@ -30,11 +31,11 @@ class GameCore
         Console.WriteLine($"Morty: Oh geez, Rick, I'm gonna hide your portal gun in one of the {BoxCount} boxes, okay?");
         Console.WriteLine($"Morty: HMAC1={hmac1}");
         Console.WriteLine($"Morty: Rick, enter your number [0,{BoxCount}) so you don’t whine later that I cheated, alright?");
-        r1 = int.Parse(Console.ReadLine());
+        r1 = int.Parse(Console.ReadLine()!);
         FairNumber1 = ProvablyFairProtocol.GenerateFairNumber(m1, r1, BoxCount);
         Morty = MortyPlugin.GetMortyInstance(MortyType, this, BoxCount, FairNumber1);
         Console.WriteLine($"Morty: Okay, okay, I hid the gun. What’s your guess [0,{BoxCount})?");
-        b = int.Parse(Console.ReadLine());
+        b = int.Parse(Console.ReadLine()!);
         Morty.ReceiveRickGuess(b);
     }
     public int GenerateFairNumber2()
@@ -45,7 +46,7 @@ class GameCore
         Console.WriteLine($"Morty: HMAC2={hmac2}");
         var numbers = Enumerable.Range(0, BoxCount).Where(n => n != b);
         Console.WriteLine($"Morty: Rick, enter your number {string.Join(", ", numbers)} so you don't whine later that I cheated, alright?");
-        r2 = int.Parse(Console.ReadLine());
+        r2 = int.Parse(Console.ReadLine()!);
         FairNumber2 = ProvablyFairProtocol.GenerateFairNumber(m2, r2, BoxCount - 1);
         return FairNumber2;
     }
@@ -59,14 +60,22 @@ class GameCore
     public void PlayRound()
     {
         GenerateFairNumber1();
-        remainingBoxes = Morty.EliminateBoxes();
+        remainingBoxes = Morty!.EliminateBoxes();
         Console.WriteLine("Morty: You can switch your box (enter 0), or, you know, stick with it (enter 1).");
         int switchOrNot;
         while (!int.TryParse(Console.ReadLine(), out switchOrNot) || (switchOrNot != 0 && switchOrNot != 1))
         {
             Console.WriteLine("Morty: Aw geez Rick, you need to enter 0 to switch or 1 to stick with your choice!");
         }
-        bool isWin = (b == FairNumber1 && switchOrNot == 1) || (b != FairNumber1 && switchOrNot == 0);
+        Console.WriteLine($"Morty: Aww man, my 1st random value is {m1}.");
+        Console.WriteLine($"Morty: KEY1={key1}");
+        Console.WriteLine($"Morty: So the 1st fair number is ({m1} + {r1}) % {BoxCount} = {FairNumber1}. ");
+        Console.WriteLine($"Morty: Aww man, my 2nd random value is {m2}.  ");
+        Console.WriteLine($"Morty: KEY2={key2}  ");
+        Console.WriteLine($"Morty: Uh, okay, the 2nd fair number is ({m2} + {r2}) % ({BoxCount - 1}) = {FairNumber2}");
+        Console.WriteLine($"Morty: You portal gun is in the box {FairNumber1}. ");
+        int finalBox = switchOrNot == 0 ? remainingBoxes.First(box => box != b) : b;
+        bool isWin = finalBox == FairNumber1;
         bool isSwitched = switchOrNot == 0;
 
         statisticsAccumulator.RecordRound(isWin, isSwitched);
@@ -88,9 +97,19 @@ class GameCore
         {
             PlayRound();
             Console.WriteLine("Morty: Do you want to play another round? (y/n)");
-            string response = Console.ReadLine().Trim().ToLower();
+            string response = Console.ReadLine()!.Trim().ToLower();
             continuePlaying = response == "yes" || response == "y";
         }
+        Console.WriteLine("Morty: Okay... uh... Bye, Rick.");
+        string[] exactProbabilities = Morty!.CalculateExactProbability();
+        string[] estimatedProbabilities = statisticsAccumulator.CalculateEstimateProbability();
+        var table = new ConsoleTable("Game Results", "Switched", "Stayed");
+        table.AddRow("Rounds", statisticsAccumulator.SwitchedRounds, statisticsAccumulator.StayedRounds)
+             .AddRow("Wins", statisticsAccumulator.SwitchedWins, statisticsAccumulator.StayedWins)
+            .AddRow("Exact Probability", exactProbabilities[0], exactProbabilities[1])
+            .AddRow("Estimated Probability", estimatedProbabilities[0], estimatedProbabilities[1]);
 
+        table.Write();
+        Console.WriteLine();
     }
 }

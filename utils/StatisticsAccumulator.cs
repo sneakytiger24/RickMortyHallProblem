@@ -1,9 +1,9 @@
 class StatisticsAccumulator
 {
-    private int SwitchedRounds = 0;
-    private int SwitchedWins = 0;
-    private int StayedRounds = 0;
-    private int StayedWins = 0;
+    public int SwitchedRounds = 0;
+    public int SwitchedWins = 0;
+    public int StayedRounds = 0;
+    public int StayedWins = 0;
 
     public void RecordRound(bool isWin, bool isSwitched)
     {

@@ -1,2 +1,4 @@
-﻿// See https://aka.ms/new-console-template for more information
-Console.WriteLine("Hello, World!");
+﻿using ConsoleTables;
+ParamsParser.ValidateArguments(args);
+GameCore game = new GameCore(ParamsParser.BoxNumber, ParamsParser.MortyType);
+game.PlayGame();

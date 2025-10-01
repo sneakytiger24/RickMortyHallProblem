@@ -8,9 +8,9 @@ class ClassicMorty : Morty
         Game.ShowMessage($"Morty: Alright, Rick, I’m gonna open one of the boxes that doesn’t have the portal gun and isn’t your guess.");
         int[] result;
         int keeping;
+        int fairNumber2 = Game.GenerateFairNumber2();
         if (RickGuessNumber == FairNumber)
         {
-            int fairNumber2 = Game.GenerateFairNumber2();
             result = [RickGuessNumber, fairNumber2];
             Array.Sort(result);
             keeping = fairNumber2;

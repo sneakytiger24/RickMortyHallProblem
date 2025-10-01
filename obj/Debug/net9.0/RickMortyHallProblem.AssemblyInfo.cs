@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("RickMortyHallProblem")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+117cca1b4e5ef9f2f4acd6522ef37fb145599e9f")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+13c782f0fb2b7dd7b71c128b29fc02af8e6afb3f")]
 [assembly: System.Reflection.AssemblyProductAttribute("RickMortyHallProblem")]
 [assembly: System.Reflection.AssemblyTitleAttribute("RickMortyHallProblem")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
