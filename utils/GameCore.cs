@@ -1,0 +1,96 @@
+class GameCore
+{
+    private int BoxCount;
+    private int FairNumber1;
+    private int FairNumber2;
+    private string MortyType;
+    private Morty Morty;
+    private string key1;
+    private string key2;
+    private string hmac1;
+    private string hmac2;
+    private int m1;
+    private int m2;
+    private int r1;
+    private int r2;
+    private int b;
+    private int[] remainingBoxes;
+    private StatisticsAccumulator statisticsAccumulator;
+    public GameCore(int boxCount, string mortyType)
+    {
+        this.BoxCount = boxCount;
+        this.MortyType = mortyType;
+        this.statisticsAccumulator = new StatisticsAccumulator();
+    }
+    public void GenerateFairNumber1()
+    {
+        key1 = ProvablyFairProtocol.GenerateKey();
+        m1 = ProvablyFairProtocol.GenerateRandomNumber(BoxCount);
+        hmac1 = ProvablyFairProtocol.ComputeHMAC(key1, m1);
+        Console.WriteLine($"Morty: Oh geez, Rick, I'm gonna hide your portal gun in one of the {BoxCount} boxes, okay?");
+        Console.WriteLine($"Morty: HMAC1={hmac1}");
+        Console.WriteLine($"Morty: Rick, enter your number [0,{BoxCount}) so you don’t whine later that I cheated, alright?");
+        r1 = int.Parse(Console.ReadLine());
+        FairNumber1 = ProvablyFairProtocol.GenerateFairNumber(m1, r1, BoxCount);
+        Morty = MortyPlugin.GetMortyInstance(MortyType, this, BoxCount, FairNumber1);
+        Console.WriteLine($"Morty: Okay, okay, I hid the gun. What’s your guess [0,{BoxCount})?");
+        b = int.Parse(Console.ReadLine());
+        Morty.ReceiveRickGuess(b);
+    }
+    public int GenerateFairNumber2()
+    {
+        key2 = ProvablyFairProtocol.GenerateKey();
+        m2 = ProvablyFairProtocol.GenerateRandomNumber(BoxCount);
+        hmac2 = ProvablyFairProtocol.ComputeHMAC(key2, m2);
+        Console.WriteLine($"Morty: HMAC2={hmac2}");
+        var numbers = Enumerable.Range(0, BoxCount).Where(n => n != b);
+        Console.WriteLine($"Morty: Rick, enter your number {string.Join(", ", numbers)} so you don't whine later that I cheated, alright?");
+        r2 = int.Parse(Console.ReadLine());
+        FairNumber2 = ProvablyFairProtocol.GenerateFairNumber(m2, r2, BoxCount - 1);
+        return FairNumber2;
+    }
+    public void ShowMessage(string message) { Console.WriteLine(message); }
+
+    public StatisticsAccumulator GetStatistics()
+    {
+        return statisticsAccumulator;
+    }
+
+    public void PlayRound()
+    {
+        GenerateFairNumber1();
+        remainingBoxes = Morty.EliminateBoxes();
+        Console.WriteLine("Morty: You can switch your box (enter 0), or, you know, stick with it (enter 1).");
+        int switchOrNot;
+        while (!int.TryParse(Console.ReadLine(), out switchOrNot) || (switchOrNot != 0 && switchOrNot != 1))
+        {
+            Console.WriteLine("Morty: Aw geez Rick, you need to enter 0 to switch or 1 to stick with your choice!");
+        }
+        bool isWin = (b == FairNumber1 && switchOrNot == 1) || (b != FairNumber1 && switchOrNot == 0);
+        bool isSwitched = switchOrNot == 0;
+
+        statisticsAccumulator.RecordRound(isWin, isSwitched);
+
+        if (isWin)
+        {
+            Console.WriteLine("Morty: You won the portal gun! I mean, you got the portal gun!");
+        }
+        else
+        {
+            Console.WriteLine("Morty: You lost! I mean, you didn't get the portal gun!");
+        }
+    }
+
+    public void PlayGame()
+    {
+        bool continuePlaying = true;
+        while (continuePlaying)
+        {
+            PlayRound();
+            Console.WriteLine("Morty: Do you want to play another round? (y/n)");
+            string response = Console.ReadLine().Trim().ToLower();
+            continuePlaying = response == "yes" || response == "y";
+        }
+
+    }
+}
