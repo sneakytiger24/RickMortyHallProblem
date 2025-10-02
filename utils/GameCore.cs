@@ -17,6 +17,7 @@ class GameCore
     private int b;
     private int[]? remainingBoxes;
     private StatisticsAccumulator statisticsAccumulator;
+    private bool isAutoMode = false;
     public GameCore(int boxCount, string mortyType)
     {
         this.BoxCount = boxCount;
@@ -45,18 +46,47 @@ class GameCore
         }
         Morty.ReceiveRickGuess(b);
     }
+    
+    public void GenerateFairNumber1Auto()
+    {
+        key1 = ProvablyFairProtocol.GenerateKey();
+        m1 = ProvablyFairProtocol.GenerateRandomNumber(BoxCount);
+        hmac1 = ProvablyFairProtocol.ComputeHMAC(key1, m1);
+        
+        // Auto-generate r1 using ProvablyFairProtocol
+        r1 = ProvablyFairProtocol.GenerateRandomNumber(BoxCount);
+        
+        FairNumber1 = ProvablyFairProtocol.GenerateFairNumber(m1, r1, BoxCount);
+        Morty = MortyPlugin.GetMortyInstance(MortyType, this, BoxCount, FairNumber1);
+        
+        // Auto-generate initial guess using ProvablyFairProtocol
+        b = ProvablyFairProtocol.GenerateRandomNumber(BoxCount);
+        
+        Morty.ReceiveRickGuess(b);
+    }
     public int GenerateFairNumber2()
     {
         key2 = ProvablyFairProtocol.GenerateKey();
         m2 = ProvablyFairProtocol.GenerateRandomNumber(BoxCount);
         hmac2 = ProvablyFairProtocol.ComputeHMAC(key2, m2);
-        Console.WriteLine($"Morty: HMAC2={hmac2}");
-        var numbers = Enumerable.Range(0, BoxCount).Where(n => n != b);
-        Console.WriteLine($"Morty: Rick, enter your number [{string.Join(", ", numbers)}] so you don't whine later that I cheated, alright?");
-        while (!int.TryParse(Console.ReadLine(), out r2) || !numbers.Contains(r2))
+        
+        if (!isAutoMode)
         {
-            Console.WriteLine($"Morty: Aw geez Rick, you need to enter a number from [{string.Join(", ", numbers)}]!");
+            Console.WriteLine($"Morty: HMAC2={hmac2}");
+            var numbers = Enumerable.Range(0, BoxCount).Where(n => n != b);
+            Console.WriteLine($"Morty: Rick, enter your number [{string.Join(", ", numbers)}] so you don't whine later that I cheated, alright?");
+            while (!int.TryParse(Console.ReadLine(), out r2) || !numbers.Contains(r2))
+            {
+                Console.WriteLine($"Morty: Aw geez Rick, you need to enter a number from [{string.Join(", ", numbers)}]!");
+            }
         }
+        else
+        {
+            // Auto-generate r2 from available numbers
+            var numbers = Enumerable.Range(0, BoxCount).Where(n => n != b).ToArray();
+            r2 = numbers[ProvablyFairProtocol.GenerateRandomNumber(numbers.Length)];
+        }
+        
         remainingBoxes = Enumerable.Range(0, BoxCount).Where(n => n != FairNumber1 && n != b).ToArray();
         FairNumber2 = remainingBoxes[ProvablyFairProtocol.GenerateFairNumber(m2, r2, remainingBoxes.Length)];
 
@@ -102,6 +132,28 @@ class GameCore
         }
     }
 
+    public void PlayRoundAuto()
+    {
+        isAutoMode = true;
+        GenerateFairNumber1Auto();
+        remainingBoxes = Morty!.EliminateBoxes();
+        
+        // Auto-generate switch decision using ProvablyFairProtocol
+        int switchOrNot = ProvablyFairProtocol.GenerateRandomNumber(2); // 0 or 1
+
+        Console.WriteLine($"Auto: Rick's guess = {b}, Switch decision = {(switchOrNot == 0 ? "Switch" : "Stay")}");
+
+        int finalBox = switchOrNot == 0 ? remainingBoxes.First(box => box != b) : b;
+        bool isWin = finalBox == FairNumber1;
+        bool isSwitched = switchOrNot == 0;
+
+        statisticsAccumulator.RecordRound(isWin, isSwitched);
+
+        Console.WriteLine($"Portal gun was in box {FairNumber1}. Final choice: box {finalBox}. Result: {(isWin ? "WIN" : "LOSE")}");
+        
+        isAutoMode = false;
+    }
+
     public void PlayGame()
     {
         bool continuePlaying = true;
@@ -124,4 +176,28 @@ class GameCore
         table.Write();
         Console.WriteLine();
     }
+
+    public void PlayGameAuto()
+    {
+        Console.WriteLine("Morty: Aw geez Rick, starting automated game with 100 rounds...");
+
+        for (int round = 1; round <= 100; round++)
+        {
+            Console.WriteLine($"\n--- Round {round}/100 ---");
+            PlayRoundAuto();
+        }
+
+        Console.WriteLine("\nMorty: Aw man, the automated game is done, Rick!");
+        string[] exactProbabilities = Morty!.CalculateExactProbability();
+        string[] estimatedProbabilities = statisticsAccumulator.CalculateEstimateProbability();
+        var table = new ConsoleTable("Game Results", "Switched", "Stayed");
+        table.AddRow("Rounds", statisticsAccumulator.SwitchedRounds, statisticsAccumulator.StayedRounds)
+             .AddRow("Wins", statisticsAccumulator.SwitchedWins, statisticsAccumulator.StayedWins)
+            .AddRow("Exact Probability", exactProbabilities[0], exactProbabilities[1])
+            .AddRow("Estimated Probability", estimatedProbabilities[0], estimatedProbabilities[1]);
+
+        table.Write();
+        Console.WriteLine();
+    }
+
 }
